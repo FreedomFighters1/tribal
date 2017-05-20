@@ -1,23 +1,46 @@
 const PlaylistController = function( tribalServer, $location, $scope ) {
-  
-  //Like button counter
-  this.likeButtonHandler = (song) => {
-      console.log('song',song)
-      song.count++;
-    tribalServer.likeButton(song.count, song._id)
+
+  this.removeSong = (uri) => {
+    this.playlist.forEach((playlistSong, index) => {
+      if (playlistSong.uri === uri) {
+        this.playlist.splice(index, 1);
+      }
+    });
+
+    $scope.$apply();
   };
 
-  this.removeSongHandler = (song) => {
-    console.log('Remove that Ish', song)
-    tribalServer.removeButton(song._id)
-    console.log(song._id, 'has been click')
-  }
+  this.removeSongButtonHandler = (song) => {
+    tribalServer.removeSong(song.uri); 
+  };
 
   this.songAddedHandler = (uri) => {
     this.playlist.push({ uri: uri });
     $scope.$apply();
-  };
+  }; 
+  
+  // this.likeButtonHandler = (song) => {
+    // if (clicked[song] === undefined)
+      // if (!this.clicked) {
+      //   song.count.length++;
+      //   this.clicked = true;
+      // } else {
+      //   song.count.length--;
+      //   this.clicked = false;
+      // };
+      // song.count.length++;
+    // this.likeButton.push()
+    // song.count.length++;
 
+    // var player = JSON.parse( JSON.stringify(this.playlist) );
+    // player.count++
+    // tribalServer.likeButton(song.count, song._id);
+  // };
+  
+  // tribalServer.registerLikeHandler( );
+// };
+
+  tribalServer.registerSongRemovedHandler( this.removeSong );
   tribalServer.registerSongAddedHandler( this.songAddedHandler );
   tribalServer.getPlaylist( $location.search().playlist, (res) => {
     $location.search( 'playlist', res._id );
@@ -26,13 +49,13 @@ const PlaylistController = function( tribalServer, $location, $scope ) {
   });
 };
 
-
 const Playlist = function() {
   return {
     require: '',
     scope: {
-      onClick: '=',
-      count: '='
+      playlist: '<',
+      count: '=',
+      song: '<'
     },
     restrict: 'E',
     controller: [ 'tribalServer', '$location', '$scope', PlaylistController ],
@@ -41,7 +64,6 @@ const Playlist = function() {
     templateUrl: '/templates/playlist.html'
   };
 };
-
 
 angular.module('tribal').directive('playlist', Playlist);
 

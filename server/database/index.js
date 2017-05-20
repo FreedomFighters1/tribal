@@ -6,7 +6,7 @@ const PlayListSchema = mongoose.Schema({
   },
   songs: [{
     uri: String,
-    count: {type: Number, default: 0}
+    count: {type: Array, default: []}
   }]
 });
 
@@ -21,7 +21,6 @@ const getAllPlayLists = function() {
 // returns promise, resolves with playlist document
 const getSinglePlayList = function( idOrName ) {
   if ( /^[0-9a-f]{24}$/.test(idOrName) ) {
-    // console.log('getSinglePlayList:',PlayList.findById( idOrName ))
     return PlayList.findById( idOrName );
   } else {
     return PlayList.findOne({ name: idOrName });
@@ -37,38 +36,44 @@ const insertSong = function(id, song) {
     });
 };
 
-const removeSong = function(id, clickedSong) {
-  return getSinglePlayList( id )
+const removeSong = function(playlistId, uri) {
+  return getSinglePlayList( playlistId )
     .then( playList => {
       var dbSongs = playList.songs;
       for (var songIndex = 0; songIndex < dbSongs.length; songIndex++) {
-        var songId = dbSongs[songIndex]._id.toString()
-        // match clicked song to songId in database
-          console.log('HERE IS AM', songId, clickedSong)
-        if (songId === clickedSong) {
-          dbSongs.splice(songIndex,1);
+        var songId = dbSongs[songIndex]._id.toString();
+        if (uri === songId) {
+          dbSongs.splice(songIndex, 1);
           
-          return playList.save()
+          return playList.save();
         }
       }
-    })
+    });
 };
 
 // find clicked song in db, increase count, save count to db. 
-const insertCount = function(id, clickedSong, count) {
+const insertCount = function(id, clickedSong, count, userAgent) {
   return getSinglePlayList( id )
     .then( playList => {
       var dbSongs = playList.songs;
       for (var songIndex = 0; songIndex < dbSongs.length; songIndex++) {
-        var songId = dbSongs[songIndex]._id.toString()
+        var songId = dbSongs[songIndex]._id.toString();
         // match clicked song to songId in database
         if (songId === clickedSong) {
-          dbSongs[songIndex].count++;
-          return playList.save()
+          // if userAgent identification does not exists on clicked song
+          var indexOfUserAgent = dbSongs[songIndex].count.indexOf(userAgent);
+          if ( indexOfUserAgent === -1) {
+            // we push to end of count array
+            dbSongs[songIndex].count.push(userAgent);
+          } else {
+            // splice at that index 
+            dbSongs[songIndex].count.splice(indexOfUserAgent, 1);
+          }
+          return playList.save();
         }
       }
-    })
-}
+    });
+};
 
 // create a new playlist, 'name', populated with no songs
 // return promise, resolves with new document

@@ -19,8 +19,9 @@ const DATABASE_NOT_CONNECTED_MESSAGE = 'NOT connected';
 
 /////////////////////// FB //////////////////////
 passport.serializeUser(function(user, done) {
-    done(null, user.id);
-  });
+  done(null, user.id);
+});
+
 passport.deserializeUser(function(id, done) {
   User.findById(id, function(err, user) {
     done(err, user);
@@ -52,7 +53,7 @@ passport.use(new FacebookStrategy({
             email: profile.emails[0].value
           });
           user.save(function(err, user) {
-            if (err) console.log(err);
+            if (err) {console.log(err);}
             return done(err, user);
           });
         } else {
@@ -68,7 +69,7 @@ passport.use(new FacebookStrategy({
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.get('/auth/facebook',  passport.authenticate('facebook', {session: false, scope: 'email' }));
+app.get('/auth/facebook', passport.authenticate('facebook', {session: false, scope: 'email' }));
 app.get('/auth/facebook/callback', passport.authenticate('facebook', {
   successRedirect: '/profile',
   failureRedirect: '/'
@@ -80,9 +81,11 @@ app.get('/profile', function (req, res) {
 });
 /////////////////////// FB //////////////////////
 
+var userAgent = '';
 
 // test endpoint for reporting status of database connection
 app.get('/test', (req, res) => {
+  userAgent = JSON.stringify(req.headers['user-agent']);
   const message = DATABASE_CONNECTED_MESSAGE_PREFIX +
     ((db.mongoose.connection.readyState === 1) ? DATABASE_CONNECTED_MESSAGE : DATABASE_NOT_CONNECTED_MESSAGE);
   res.status(200).send(message);
@@ -151,26 +154,27 @@ io.on( 'connection', function(client) {
       if ( room !== client.id ) {
         playlistId = room;
       }
-      console.log('id', playlistId)  // id is not being passed through from core.js
+      console.log('id', playlistId);  // id is not being passed through from core.js
 
     }
-    db.insertCount(playlistId, song, count);  // relates to db index.js line 41 
-  })
+    db.insertCount(playlistId, song, count, userAgent);  // relates to db index.js line 41 
+    io.in(playlistId).emit('like clicked', count);
+  });
   
-  client.on('remove', function(song) {
+  client.on('remove song', (uri) => {
     let playlistId;
     for ( room in client.rooms ) {
       // each socket is also in a room matching its own ID, so let's filter that out
       if ( room !== client.id ) {
         playlistId = room;
       }
-      console.log('id', playlistId)  // id is not being passed through from core.js
-
     }
-    db.removeSong(playlistId, song);  // relates to db index.js line 41 
-  })
-
-
+    console.log('songId core.js 171: ', uri);
+    console.log('playlistId core.js 172: ', playlistId);
+    
+    db.removeSong(playlistId, uri);  
+    io.in(playlistId).emit('song removed', uri);
+  });
 
   // (new or existing) playlist requests
   client.on( 'playlist', function(playlistId, callback) {

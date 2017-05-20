@@ -11,15 +11,13 @@ const tribalServer = function( $http ) {
     socket.emit( 'playlist', playlistId, callback );
   };
 
-  this.likeButton = function(count, song) {
-    socket.emit( 'like', count, song )
-    console.log('Like Button Clicked', count)
-  }
+  this.removeSong = function(uri) {
+    socket.emit( 'remove song', uri );
+  };
 
-  this.removeButton = function(song) {
-    socket.emit( 'remove', song )
-    console.log('remove Button Clicked', song)
-  }
+  this.registerSongRemovedHandler = (callback) => {
+    socket.on('song removed', (uri) => callback(uri)); 
+  };
 
   // request that the server add a song to the playlist
   this.addSong = function( uri ) {
@@ -30,6 +28,14 @@ const tribalServer = function( $http ) {
     socket.on( 'song added', callback );
   };
 
+  this.likeButton = function(count, song) {
+    socket.emit( 'like', count, song );
+  };
+
+  this.registerLikeHandler = function ( callback ) {
+    socket.on ('like clicked', callback);
+  };
+  
   this.spotifySearch = function(trackName) {
     return $http.get( '/tracks', {
       params: {
