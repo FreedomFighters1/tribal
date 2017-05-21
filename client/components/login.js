@@ -3,6 +3,10 @@ angular.module('tribal')
 .controller('LoginController', function($scope, $location) {
   this.loginButtonHandler = () => {
   };
+  this.showLogout = false;
+  this.toggleLogout = function() {
+    this.showLogout = !(this.showLogout)
+  };
 })
 .directive('login', function() {
   return {

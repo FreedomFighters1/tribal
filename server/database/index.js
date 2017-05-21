@@ -1,5 +1,29 @@
 const mongoose = require( './init' );
 
+const FacebookUserSchema = new mongoose.Schema({
+  facebookID: {type: String, unique: true},
+  name: String,
+  email: String, 
+  playlists: {type: Array, default:[]}
+});
+
+const User = mongoose.model('User', FacebookUserSchema);
+
+// insertUserPlaylist inserts playlists into db
+const insertUserPlaylist = function( onePlaylist, email ) {
+  return getSingleUser( email )
+    .then(user => {
+      user.playlists.push(onePlaylist);
+      return user.save();
+    });
+};
+
+const getSingleUser = function( email ) {
+  console.log("get single user", email)
+  return User.find({ email: email });
+}
+
+
 const PlayListSchema = mongoose.Schema({
   name: {
     type: String,
@@ -87,3 +111,6 @@ module.exports.insertSong = insertSong;
 module.exports.removeSong = removeSong;
 module.exports.insertCount = insertCount;
 module.exports.createPlayList = createPlayList;
+module.exports.insertUserPlaylist = insertUserPlaylist;
+module.exports.getSingleUser = getSingleUser;
+module.exports.User = User;

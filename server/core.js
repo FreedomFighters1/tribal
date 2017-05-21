@@ -4,7 +4,7 @@ const Promise = require('bluebird');
 const request = require('request');
 const mongoose = require('mongoose');
 const passport = require('passport');
-const User = require('./database/userschema');
+//const User = require('./database/userschema');
 const FacebookStrategy = require('passport-facebook').Strategy;
 
 const app = express();
@@ -18,15 +18,17 @@ const DATABASE_CONNECTED_MESSAGE = 'Connected';
 const DATABASE_NOT_CONNECTED_MESSAGE = 'NOT connected';
 
 /////////////////////// FB //////////////////////
+
 passport.serializeUser(function(user, done) {
-  done(null, user.id);
+  done(null, user);
 });
 
-passport.deserializeUser(function(id, done) {
-  User.findById(id, function(err, user) {
-    done(err, user);
-  });
+passport.deserializeUser(function(user, done) {
+  done(null, user);
 });
+
+
+var email = '';
 
 passport.use(new FacebookStrategy({
   clientID: '1199458670180745',
@@ -40,24 +42,28 @@ passport.use(new FacebookStrategy({
       console.log('accessToken', accessToken);
       console.log('refreshToken', refreshToken);
       console.log('profile', profile);
+      
+      email = profile.emails[0].value;
 
-      User.find({'facebookID': profile.id}, function(err, data) {
+      db.User.find({'facebookID': profile.id}, function(err, data) {
         if (err) {
           return done(err);
         }
-        //if no data create new user with values from Google
         if (data.length === 0) {
-          user = new User({
+          user = new db.User({
             facebookID: profile.id, 
             name: profile.displayName, 
             email: profile.emails[0].value
           });
+          
+          // email is global variable for later use
+          email = profile.emails[0].value;
+
           user.save(function(err, user) {
-            if (err) {console.log(err);}
+            if (err) console.log(err);
             return done(err, user);
           });
         } else {
-          //found user. Return
           return done(err, data);
         }
       });
@@ -67,25 +73,32 @@ passport.use(new FacebookStrategy({
 
 
 app.use(passport.initialize());
-app.use(passport.session());
+//app.use(passport.session());
 
-app.get('/auth/facebook', passport.authenticate('facebook', {session: false, scope: 'email' }));
+app.get('/auth/facebook',  passport.authenticate('facebook', {session: false, scope: 'email' }));
 app.get('/auth/facebook/callback', passport.authenticate('facebook', {
-  successRedirect: '/profile',
-  failureRedirect: '/'
-}));
+  failureRedirect: '/'}), function(req, res) {
+    // success redirect
+    res.redirect('/')
+  }
+);
 
 app.get('/profile', function (req, res) {
   console.log('we got to the profile page');
   res.send('AUTHENTICATION OK!');
 });
+
+
+app.get('/logout', function(req, res) {
+  req.logout(); 
+  res.redirect('/');
+});
 /////////////////////// FB //////////////////////
 
-var userAgent = '';
-
+var useragent = '';
 // test endpoint for reporting status of database connection
 app.get('/test', (req, res) => {
-  userAgent = JSON.stringify(req.headers['user-agent']);
+  useragent = JSON.stringify(req.headers['user-agent']);
   const message = DATABASE_CONNECTED_MESSAGE_PREFIX +
     ((db.mongoose.connection.readyState === 1) ? DATABASE_CONNECTED_MESSAGE : DATABASE_NOT_CONNECTED_MESSAGE);
   res.status(200).send(message);
@@ -127,6 +140,7 @@ app.get('/tracks', (req, res) => {
   });
 });
 
+
 // socket.io framework
 io.on( 'connection', function(client) {
 
@@ -142,8 +156,37 @@ io.on( 'connection', function(client) {
     }
     console.log( '  for playlist', playlistId );
     db.insertSong(playlistId, {uri: uri});
+
+    // add unique playlist to user 
+    db.User.findOne({email: email}, function (err, user) {      
+      if (user.playlists.indexOf(playlistId) === -1){
+        user.playlists.push(playlistId);
+      }
+      user.save(function (err) {
+        if(err) {
+          console.error('ERROR!');
+        }
+      });
+    });
+    
     // transmit the confirmation to ALL clients working with this playlist
     io.in(playlistId).emit('song added', uri);
+  });
+
+  client.on('remove song', (uri) => {
+    console.log( 'Client removed song', uri );
+    // the playlistId is the name of a room that this socket is in
+    let playlistId;
+    for ( room in client.rooms ) {
+      // each socket is also in a room matching its own ID, so let's filter that out
+      if ( room !== client.id ) {
+        playlistId = room;
+      }
+    }
+    console.log( '  for playlist', playlistId );
+    db.removeSong(playlistId, uri);
+    // transmit the confirmation to ALL clients working with this playlist
+    io.in(playlistId).emit('song removed', uri);
   });
 
 //################ Like Count ################### event listener
@@ -154,27 +197,26 @@ io.on( 'connection', function(client) {
       if ( room !== client.id ) {
         playlistId = room;
       }
-      console.log('id', playlistId);  // id is not being passed through from core.js
+      console.log('id', playlistId)  // id is not being passed through from core.js
 
     }
-    db.insertCount(playlistId, song, count, userAgent);  // relates to db index.js line 41 
-    io.in(playlistId).emit('like clicked', count);
-  });
+    db.insertCount(playlistId, song, count, useragent);  // relates to db index.js line 41 
+  })
   
-  client.on('remove song', (uri) => {
+  client.on('remove', function(song) {
     let playlistId;
     for ( room in client.rooms ) {
       // each socket is also in a room matching its own ID, so let's filter that out
       if ( room !== client.id ) {
         playlistId = room;
       }
+      console.log('id', playlistId)  // id is not being passed through from core.js
+
     }
-    console.log('songId core.js 171: ', uri);
-    console.log('playlistId core.js 172: ', playlistId);
-    
-    db.removeSong(playlistId, uri);  
-    io.in(playlistId).emit('song removed', uri);
-  });
+    db.removeSong(playlistId, song);  // relates to db index.js line 41 
+  })
+
+
 
   // (new or existing) playlist requests
   client.on( 'playlist', function(playlistId, callback) {
