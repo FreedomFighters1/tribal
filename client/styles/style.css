@@ -3,7 +3,7 @@ body {
 }
 
 html {
-  background: url("../resources/recordPlayer.jpg") no-repeat center center fixed;
+  background: url("../resources/Jazz-band..jpg") no-repeat center center fixed;
   background-size: cover;
 }
 
@@ -135,7 +135,7 @@ th, td {
 
 #playlist {
   height: auto;
-  width: 600px;
+  width: 400px;
 
   font-weight: bold;
   padding: 3px;

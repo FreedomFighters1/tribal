@@ -81,20 +81,12 @@ const insertCount = function(id, clickedSong, userAgent) {
       var dbSongs = playList.songs;
       for (var songIndex = 0; songIndex < dbSongs.length; songIndex++) {
         var songId = dbSongs[songIndex].uri.toString();
-        // match clicked song to songId in database
         if (songId === clickedSong) {
-          // if userAgent identification does not exists on clicked song
           var indexOfUserAgent = dbSongs[songIndex].count.indexOf(userAgent);
-          if ( indexOfUserAgent === -1) {
-            // we push to end of count array
-            dbSongs[songIndex].count.push(userAgent);
-          } else {
-            // splice at that index 
-            dbSongs[songIndex].count.splice(indexOfUserAgent, 1);
-          }
-          return playList.save();
+          dbSongs[songIndex].count.push(userAgent);
         }
       }
+      return playList.save();
     });
 };
 

@@ -26,13 +26,7 @@ const PlaylistController = function( tribalServer, $location, $scope ) {
   this.likeSong = (uri, userAgent) => {
     this.playlist.forEach((playlistSong, index) => {
       if (playlistSong.uri === uri) {
-        console.log('playlistSong1:',playlistSong.count)
-        if ( playlistSong.count.indexOf(userAgent) === -1 ) {
-          playlistSong.count.push(userAgent);
-          console.log('playlistSong2:',playlistSong.count)
-        } else {
-          playlistSong.count.splice(playlistSong.count.indexOf(userAgent),1)
-        }
+        playlistSong.count.push(userAgent);
       }
     });
     $scope.$apply();
