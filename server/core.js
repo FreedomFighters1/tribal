@@ -154,7 +154,7 @@ io.on( 'connection', function(client) {
         playlistId = room;
       }
     }
-    console.log( '  for playlist', playlistId );
+    console.log( 'for playlist', playlistId );
     db.insertSong(playlistId, {uri: uri});
 
     // add unique playlist to user 
@@ -191,25 +191,24 @@ io.on( 'connection', function(client) {
         playlistId = room;
       }
     }
-    console.log( '  for playlist', playlistId );
+    console.log( 'for playlist', playlistId );
     db.removeSong(playlistId, uri);
     // transmit the confirmation to ALL clients working with this playlist
     io.in(playlistId).emit('song removed', uri);
   });
 
 //################ Like Count ################### event listener
-  client.on('like', function(count, song) {
+  client.on('like song', function(uri) {
     let playlistId;
     for ( room in client.rooms ) {
       // each socket is also in a room matching its own ID, so let's filter that out
       if ( room !== client.id ) {
         playlistId = room;
       }
-      console.log('id', playlistId)  // id is not being passed through from core.js
-
     }
-    db.insertCount(playlistId, song, count, useragent);  // relates to db index.js line 41 
-  })
+    db.insertCount(playlistId, uri, userAgent); 
+    io.in(playlistId).emit('like added' , uri, userAgent);
+  });
   
   client.on('remove', function(song) {
     let playlistId;
@@ -223,8 +222,6 @@ io.on( 'connection', function(client) {
     }
     db.removeSong(playlistId, song);  // relates to db index.js line 41 
   })
-
-
 
   // (new or existing) playlist requests
   client.on( 'playlist', function(playlistId, callback) {

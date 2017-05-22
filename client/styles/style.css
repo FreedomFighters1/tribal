@@ -78,12 +78,16 @@ th, td {
   font-size: 12px;
 }
 
-#searchButton {
+#searchButton,
+#likeButton,
+#removeButton {
   font-size: 16px;
 }
 
 .addSongButton,
-#searchButton {
+#searchButton,
+#likeButton,
+#removeButton {
   border: none;
   background-color: black;
   border-radius: 15px;
@@ -101,11 +105,15 @@ th, td {
 
 #songSearch:focus,
 #searchButton:focus,
+#likeButton:focus,
+#removeButton:focus,
 .addSongButton:focus {
   outline: none;
 }
 
 #searchButton:active,
+#likeButton:active,
+#removeButton:active,
 .addSongButton:active {
   background-color: #1ED760;
 }

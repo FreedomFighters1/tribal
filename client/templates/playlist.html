@@ -2,11 +2,11 @@
   TRIBELIST
 </h4>
 
-<div id="likeButton" ng-repeat="song in ctrl.playlist | orderBy:'-count.length'" >
+<div ng-repeat="song in ctrl.playlist | orderBy:'-count.length'" >
   
-  <button id="searchButton" ng-click="ctrl.likeButtonHandler(song)" >Like {{ song.count.length }} </button>
+  <button id="likeButton" ng-click="ctrl.likeButtonHandler(song)" >Like {{song.count.length}} </button>
 
-	<button id="removeButton" class="remove" ng-click="ctrl.removeSongButtonHandler(song)">remove song</button>
+	<button id="removeButton" ng-click="ctrl.removeSongButtonHandler(song)">Remove Song</button>
 
 	<iframe src="song in ctrl.playlist" ng-src="{{'https://open.spotify.com/embed?uri=' + song.uri}}" width="400" height="100" frameborder="0" allowtransparency="true" >	</iframe>
 
